@@ -26,7 +26,7 @@
 - [Начало работы](#начало-работы)
 - [Примеры использвания](#примеры-использвания)
 - [Источники](#источники)
-- [Способы связи](#команда-проекта)
+- [Способы связи](#способы-связи)
 
 ---
 
@@ -35,7 +35,7 @@
 - [Selenium](https://www.selenium.dev)
 - [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc.ru/)
 
-## Использование
+## Начало работы
 1. Клонируйте репозиторий:
 ```sh
 $ git clone https://gitlab.com/gleb_tk/yandex_images_parser.git
