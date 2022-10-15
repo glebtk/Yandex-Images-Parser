@@ -3,13 +3,60 @@ import json
 import requests
 
 from bs4 import BeautifulSoup
+from tqdm import tqdm
 from fake_headers import Headers
 from requests import PreparedRequest
 from selenium import webdriver
-from parameter_classes import Size, Orientation, ImageType, Color, Format
-
+from selenium.webdriver.common.by import By
 from selenium.common.exceptions import SessionNotCreatedException
 from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import ElementNotInteractableException
+
+
+class Size:
+    def __init__(self):
+        self.large = "large"
+        self.medium = "medium"
+        self.small = "small"
+
+
+class Orientation:
+    def __init__(self):
+        self.horizontal = "horizontal"
+        self.vertical = "vertical"
+        self.square = "square"
+
+
+class ImageType:
+    def __init__(self):
+        self.photo = "photo"
+        self.clipart = "clipart"
+        self.lineart = "lineart"
+        self.face = "face"
+        self.demotivator = "demotivator"
+
+
+class Color:
+    def __init__(self):
+        self.color = "color"
+        self.gray = "gray"
+        self.red = "red"
+        self.orange = "orange"
+        self.yellow = "yellow"
+        self.cyan = "cyan"
+        self.green = "green"
+        self.blue = "blue"
+        self.violet = "violet"
+        self.white = "white"
+        self.black = "black"
+
+
+class Format:
+    def __init__(self):
+        self.jpg = "jpg"
+        self.png = "png"
+        self.gif = "gifan"
 
 
 class Parser:
@@ -23,7 +70,7 @@ class Parser:
     def query_search(self,
                      query: str,
                      limit: int = 100,
-                     delay: float = 5.0,
+                     delay: float = 6.0,
                      size: Size = None,
                      orientation: Orientation = None,
                      image_type: ImageType = None,
@@ -79,7 +126,7 @@ class Parser:
     def image_search(self,
                      url: str,
                      limit: int = 100,
-                     delay: float = 5.0,
+                     delay: float = 6.0,
                      size: Size = None,
                      orientation: Orientation = None,
                      color: Color = None,
@@ -151,26 +198,66 @@ class Parser:
 
         request = self.__prepare_request(params)  # Подготавливаем запрос
 
-        time.sleep(delay)  # Задержка перед запросом
+        # Запускаем веб-драйвер:
+        try:
+            options = webdriver.FirefoxOptions()
+            options.add_argument('--headless')  # Запускать в фоновом режиме
 
-        images = []
+            driver = webdriver.Firefox(executable_path="geckodriver/geckodriver.exe", options=options)
+        except SessionNotCreatedException as e:
+            print(f"Ошибка: \033[91mSessionNotCreatedException.\033[0m Возможно, не установлен FireFox. \n\n{e.msg}")
+            raise SystemExit(1)
+
+        # Выполняем подготовленный запрос:
+        try:
+            driver.get(request.url)
+        except WebDriverException as e:
+            print(f"Ошибка: \033[91mWebDriverException.\033[0m \n\n{e.msg}")
+            raise SystemExit(1)
+
+        pbar = tqdm(total=limit)
         while True:
-            html = self.__get_html(request=request)  # Получаем html-код страницы с изображениями
+            html = driver.page_source  # Получаем html-код страницы в виде строки
+            images = self.__parse_html(html)  # Вытаскиваем из html-кода прямые ссылки на изображения
 
-            new_images = self.__parse_html(html)  # Вытаскиваем из html-кода прямые ссылки на изображения
-            images += new_images
+            # Проверяем, найдены ли изображения:
+            if len(images) == 0:
+                pbar.set_postfix_str("Что-то пошло не так... Найдено 0 изображений.")
+                break
 
-            print(f"Найдено изображений\t[\033[37m{len(images)} / {limit}\033[0m]")
+            pbar.n = len(images) if len(images) <= limit else limit
+            pbar.refresh()
 
-            # Если изображения закончились, или мы достигли необходимого количества,
-            if len(new_images) == 0 or len(images) >= limit:
-                return images[:limit]  # возвращаем изображения.
+            # Если нашли достаточно изображений, выходим:
+            if len(images) >= limit:
+                break
 
-            # Иначе, отправляем еще один запрос:
+            # Иначе, нажимаем на кнопку "Ещё картинки" и продолжаем:
             else:
-                params["p"] += 1  # Переходим к следующей странице
-                request = self.__prepare_request(params)  # Подготавливаем новый запрос с учетом изменений
+                old_page_height = driver.execute_script("return document.body.scrollHeight")
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
                 time.sleep(delay)
+                new_page_height = driver.execute_script("return document.body.scrollHeight")
+
+                if old_page_height == new_page_height:
+                    try:
+                        driver.find_element(
+                            By.XPATH,
+                            "//div [starts-with(@class, 'more')]//a[starts-with(@class, 'button2')]"
+                        ).click()
+                    except NoSuchElementException as e:
+                        print(f"Ошибка: {e.msg}")
+                        break
+                    except ElementNotInteractableException:
+                        pbar.set_postfix_str("Найдено меньше изображений")
+                        break
+                    except:
+                        break
+
+        driver.close()
+        driver.quit()
+
+        return images[:limit]
 
     def __prepare_request(self, params: dict) -> PreparedRequest:
         """
@@ -199,42 +286,6 @@ class Parser:
                                    headers=headers).prepare()
         return request
 
-    def __get_html(self, request: PreparedRequest) -> str:
-        """
-        Описание
-        ---------
-        Получает запрос, возвращает html-код страницы.
-
-        Параметры
-        ---------
-        **request:** PreparedRequest
-                Запрос
-
-        Возвращаемое значение
-        ---------
-        str: html-код страницы.
-        """
-
-        try:
-            options = webdriver.FirefoxOptions()
-            options.add_argument('--headless')
-            driver = webdriver.Firefox(executable_path="./geckodriver/geckodriver.exe", options=options)
-        except SessionNotCreatedException as e:
-            print(f"Ошибка: \033[91mSessionNotCreatedException.\033[0m Возможно, не установлен FireFox. \n\n{e.msg}")
-            raise SystemExit(1)
-
-        try:
-            driver.get(request.url)
-            html = driver.page_source
-
-            return html
-        except WebDriverException as e:
-            print(f"Ошибка: \033[91mWebDriverException.\033[0m \n\n{e.msg}")
-            raise SystemExit(1)
-        finally:
-            driver.close()
-            driver.quit()
-
     def __parse_html(self, html: str) -> list:
         """
         Описание
@@ -257,13 +308,12 @@ class Parser:
         urls = []
         try:
             pictures = pictures_place.find_all("div", {"class": "serp-item"})
-        except AttributeError:
-            print("Что-то пошло не так... Вы точно не робот?")
+
+            for pic in pictures:
+                data = json.loads(pic.get("data-bem"))
+                image = data['serp-item']['img_href']
+                urls.append(image)
+
             return urls
-
-        for pic in pictures:
-            data = json.loads(pic.get("data-bem"))
-            image = data['serp-item']['img_href']
-            urls.append(image)
-
-        return urls
+        except AttributeError:
+            return urls
