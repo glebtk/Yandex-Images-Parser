@@ -2,8 +2,8 @@ import time
 import json
 import requests
 
-from bs4 import BeautifulSoup
 from tqdm import tqdm
+from bs4 import BeautifulSoup
 from fake_headers import Headers
 from requests import PreparedRequest
 from selenium import webdriver
@@ -12,6 +12,7 @@ from selenium.common.exceptions import SessionNotCreatedException
 from selenium.common.exceptions import WebDriverException
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import ElementNotInteractableException
+from utils import randomize_delay
 
 
 class Size:
@@ -236,7 +237,7 @@ class Parser:
             else:
                 old_page_height = driver.execute_script("return document.body.scrollHeight")
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
-                time.sleep(delay)
+                time.sleep(randomize_delay(delay))
                 new_page_height = driver.execute_script("return document.body.scrollHeight")
 
                 if old_page_height == new_page_height:
