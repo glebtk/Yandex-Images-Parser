@@ -40,6 +40,10 @@ def save_images(urls: list, dir_path: str, prefix: str = "", number_images: bool
             Время таймаута при сохранении изображения
     """
 
+    # Если не существует директории сохранения, создаём:
+    if not os.path.exists(dir_path):
+        make_directory(dir_path)
+
     broken_url_counter = 0
     for i, url in enumerate(urls):
         image_name = prefix + str(url.split('/')[-1])
