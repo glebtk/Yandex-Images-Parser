@@ -132,6 +132,7 @@ class Parser:
                      orientation: Orientation = None,
                      color: Color = None,
                      image_format: Format = None,
+                     text: str = None,
                      site: str = None) -> list:
         """
         Описание
@@ -168,6 +169,7 @@ class Parser:
                   "iorient": orientation,
                   "icolor": color,
                   "itype": image_format,
+                  "text": text,
                   "site": site,
                   "rpt": "imageview",
                   "cbir_page": "similar",
