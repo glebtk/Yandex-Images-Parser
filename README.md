@@ -166,7 +166,7 @@ Done!
 - [Selenium documentation](https://selenium-python.readthedocs.io)
 
 ## Contact Information
-If you have any suggestions or suggestions, feel free to contact me by
+If you have any suggestions or feedback, feel free to contact me by
 email or via telegram!
 
 [![Mail](https://i.imgur.com/HILZFT2.png)](mailto:tutikgv@gmail.com)
