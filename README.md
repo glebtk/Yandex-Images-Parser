@@ -128,7 +128,7 @@ faces = parser.query_search(query="face",
                             orientation=parser.orientation.vertical)
 ```
 
-### Clearing Results
+### Cleaning Results
 Sometimes, during a complex search, the results may
 contain duplicate images (with the same URL).
 To remove such URLs in advance, there is a special 
