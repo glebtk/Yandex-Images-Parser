@@ -1,62 +1,60 @@
 # Yandex Images Parser
-Реализует собой **простой парсер изображений с сервиса Яндекс.Картинки**.
-Есть возможность поиска по текстовому запросу и по изображению.
+This is a **simple parser for Yandex Images**. 
+It allows searching by text query or image. 
 
-При поиске можно задать параметры поиска, такие как:
-- **размер**
-- **ориентация** 
-- **количество изображений**
-- **тип** (фото, клипарт, ~~демотиватор~~ и т. д.)
-- **цвет** (цветные, ч/б, красные, оранжевые и т. д.)
-- **формат** (jpg, png, gif)
-- **сайт**
+When searching, you can specify parameters such as:
+- **Size**
+- **Orientation** 
+- **Number of images**
+- **Type** (photo, clipart, etc.)
+- **Color** (colorful, b/w, red, orange, etc.)
+- **Format** (jpg, png, gif)
+- **Site**
 
-Задержки между запросами автоматически рандомизируются в 
-диапазоне +-15%.
+Delays between requests are automatically randomized in a range of +-15%.
 
-Также, поскольку при поиске используется **Selenium**, в данном 
-парсере отсутствует ограничение в 30 и 300 изображений.
+Since **Selenium** is used for searching, there is no limit of 30 
+or 300 images in this parser.
 
-**Требует установки браузера
-[Mozilla Firefox](https://www.mozilla.org) !**
+**It requires installation of the
+[Mozilla Firefox](https://www.mozilla.org) browser!**
 
 
-## Содержание
-- [Технологии](#технологии)
-- [Начало работы](#начало-работы)
-- [Примеры использования](#примеры-использования)
-- [Источники](#источники)
-- [Способы связи](#способы-связи)
+## Contents
+- [Technologies](#technologies)
+- [Getting Started](#getting-started)
+- [Usage Examples](#usage-examples)
+- [Sources](#sources)
+- [Contact Information](#contact-information)
 
 ---
 
-## Технологии
+## Technologies
 - [Python 3.9](https://www.python.org)
 - [Selenium](https://www.selenium.dev)
 - [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc.ru/)
 
-## Начало работы
-1. Клонируйте репозиторий:
+## Getting Started
+1. Clone the repository:
 ```sh
-$ git clone https://gitlab.com/gleb_tk/yandex_images_parser.git
+$ git clone https://github.com/glebtk/yandex_images_parser.git
 ```
 
-2. Перед использованием необходимо установить зависимости проекта:
+2. Before using, you need to install the project requirements:
 ```sh
 $ pip install -r requirements.txt
 ```
 
-3. Убедитесь, что все зависимости успешно установлены.
+3. Ensure that all requirements are successfully installed.
 
-4. Убедитесь, что установлен браузер
-[Mozilla Firefox](https://www.mozilla.org).
+4. Ensure that [Mozilla Firefox](https://www.mozilla.org) is installed.
 
-5. Чтобы проверить работоспособность, можно запустить **example.py**.
+5. To test the functionality, you can run **example.py**.
 
 
-## Примеры использования
+## Usage Examples
 
-Для начала создадим экземпляр класса парсера:
+Let's start by creating an instance of the parser class:
 
 ```python
 from yandex_images_parser import Parser
@@ -64,62 +62,64 @@ from yandex_images_parser import Parser
 parser = Parser()
 ```
 
-### Поиск
+### Search
 
-1. Допустим, что мы хотим найти одно изображение кота.
-Сделаем это!
+1. Let's say we want to find one cat image. Let's do it!
 
 ```python
-# Вызовем функцию "query_search" - поиск по запросу:
-#   параметр "query" содержит текст запроса
-#   параметр "limit" определяет требуемое количество изображений
+# Call the "query_search" function - search by query:
+#   the "query" parameter contains the text query
+#   the "limit" parameter defines the desired number of images
 
 one_cat = parser.query_search(query="cat", limit=1)
 
-# Так как функция query_search возвращает список, вытащим нулевой элемент:
+# Since the query_search function returns a list, we will extract the zero-th element:
 one_cat_url = one_cat[0]
+
 ```
-Готово! Вот результат:
+Done! Cat is here:
 
-![Действительно кот](https://i.imgur.com/b8AZPgK.jpg)
+![Really a cat](https://i.imgur.com/b8AZPgK.jpg)
 
-2. Найдем 10 похожих изображений котов через функцию **image_search**:
+2. Let's find 10 similar cat images using the **image_search** function:
 
 ```python
-# Вызовем функцию "image_search" - поиск по картинке:
-#   через параметр "url" передадим ссылку на найденное изображение
-#   limit установим равным 10-ти
+# Call the "image_search" function - search by image:
+#   pass the link to the found image through the "url" parameter
+#   set limit to 10
 
 similar_cats = parser.image_search(url=one_cat_url, limit=10)
+
 ```
-Результат поиска - список url на похожих котов:
+The search result is a list of url to similar cats:
 
 ![Еще коты](https://i.imgur.com/lZKuyKg.png)
 
-3. Кроме параметра limit можно использовать такие параметры как:
+3. In addition to the limit parameter, you can use parameters such as:
 
-- delay - время задержки между запросами (сек)
-- size - размер изображений
-- orientation - ориентация
-- image_type - тип
-- color - цвет
-- image_format - формат (jpg, png, gif)
-- site - сайт, на котором расположены изображения
+- delay - the delay time between requests (in seconds)
+- size - the size of the images
+- orientation - the orientation of the images
+- image_type - the type of the images (photo, illustration, etc.)
+- color - color
+- image_format - the format of the images (jpg, png, gif)
+- site -  the site where the images are located
 
-Например, если необходимо найти 128 картин известных художников
-в формате png, следует использовать вот этот код:
+For example, if you need to find 128 paintings of famous
+painters in png format, use this code:
 
 ```python
-paintings = parser.query_search(query="картины известных художников",
+paintings = parser.query_search(query="paintings of famous painters",
                                 limit=128,
                                 image_format=parser.format.png)
+
 ```
 
-А этот код находит 30 черно-белых изображений лиц. Вертикальной ориентации,
-среднего размера, в формате jpg.
+And this code finds 30 b/w face images, with a
+vertical orientation, medium size, and jpg format.
 
 ```python
-faces = parser.query_search(query="лицо",
+faces = parser.query_search(query="face",
                             limit=30,
                             size=parser.size.medium,
                             color=parser.color.gray,
@@ -128,45 +128,46 @@ faces = parser.query_search(query="лицо",
                             orientation=parser.orientation.vertical)
 ```
 
-### Очистка результатов
-Иногда бывает так, что в процессе сложного поиска в результат могут попасть 
-одинаковые изображения (имеющие одинаковый url). Для предварительного удаления 
-таких url в **utils.py** есть специальная функция **remove_duplicates()**.
+### Clearing Results
+Sometimes, during a complex search, the results may
+contain duplicate images (with the same URL).
+To remove such URLs in advance, there is a special 
+function called `remove_duplicates()` in **utils.py**.
 
-Импортируем её из utils:
+Import it from utils:
 
 ```python
 from utils import remove_duplicates
 ```
 
-Удалим одинаковые url из списка paintings:
+Remove duplicate URLs from the `paintings` list:
 ```python
 paintings = remove_duplicates(paintings)
 ```
 
-### Сохранение изображений
-Импортируем функцию **save_images()** из utils:
+### Saving Images
+Import the `save_images()` function from utils:
 
 ```python
 from utils import save_images
 ```
 
-Передадим в функцию список url и путь, по которому мы хотим сохранить изображения:
-
+We will pass to the function a list
+of urls and the path by which we want to save the images:
 ```python
 save_images(urls=paintings, dir_path="./images/paintings")
 ```
 
-Готово!
+Done!
 
-## Источники
-- [Похожий парсер на GitHub](https://github.com/Ulbwaa/YandexImagesParser)
-- [Python Selenium Tutorials (плейлист, eng)](https://youtube.com/playlist?list=PLzMcBGfZo4-n40rB1XaJ0ak1bemvlqumQ)
-- [Документация к Selenium (eng)](https://selenium-python.readthedocs.io)
+## Sources
+- [A similar parser on GitHub](https://github.com/Ulbwaa/YandexImagesParser)
+- [Python Selenium Tutorials](https://youtube.com/playlist?list=PLzMcBGfZo4-n40rB1XaJ0ak1bemvlqumQ)
+- [Selenium documentation](https://selenium-python.readthedocs.io)
 
-## Способы связи
-Если у вас есть предложения или пожелания, можно связаться со мной по 
-почте или через телеграм:
+## Contact Information
+If you have any suggestions or suggestions, feel free to contact me by
+email or via telegram!
 
 [![Mail](https://i.imgur.com/HILZFT2.png)](mailto:tutikgv@gmail.com)
 **E-mail:**
