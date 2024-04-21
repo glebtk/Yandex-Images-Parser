@@ -1,12 +1,17 @@
+import os
+import sys
+import glob
 import time
 import json
+import urllib
 import requests
-
-from bs4 import BeautifulSoup
 from tqdm import tqdm
+from bs4 import BeautifulSoup
+from selenium import webdriver
 from fake_headers import Headers
 from requests import PreparedRequest
-from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.service import Service
 from selenium.common.exceptions import SessionNotCreatedException
 from selenium.common.exceptions import WebDriverException
 from selenium.common.exceptions import NoSuchElementException
@@ -59,12 +64,18 @@ class Format:
 
 
 class Parser:
-    def __init__(self):
+    def __init__(self, headless=True, firefox_profile_path=None):
+
+        if not firefox_profile_path:
+            firefox_profile_path = self.__find_firefox_profile()
+
         self.size = Size()
         self.orientation = Orientation()
         self.type = ImageType()
         self.color = Color()
         self.format = Format()
+        self.headless = headless
+        self.profile_path = firefox_profile_path
 
     def query_search(self,
                      query: str,
@@ -106,8 +117,6 @@ class Parser:
         ---------
         list: A list of URL to images matching the query.
         """
-
-
 
         # Preparing the request parameters:
         params = {"text": query,
@@ -201,10 +210,32 @@ class Parser:
 
         try:
             options = webdriver.FirefoxOptions()
-            options.add_argument('--headless')
-            driver = webdriver.Firefox(executable_path="geckodriver/geckodriver.exe", options=options)
+
+            if self.headless:
+                options.add_argument('--headless')
+
+            if sys.platform.startswith('win'):
+                geckodriver_path = "geckodriver/geckodriver.exe"
+                service = Service(executable_path=geckodriver_path)
+                driver = webdriver.Firefox(service=service, options=options)
+            elif sys.platform.startswith('linux'):
+                options.add_argument(f"--profile={self.profile_path}")
+
+                try:
+                    geckodriver_path = "/usr/bin/geckodriver"
+                    service = Service(executable_path=geckodriver_path)
+                    driver = webdriver.Firefox(service=service, options=options)
+
+                except WebDriverException:
+                    geckodriver_path = "/usr/local/bin/geckodriver"
+                    service = Service(executable_path=geckodriver_path)
+                    driver = webdriver.Firefox(service=service, options=options)
+
+            else:
+                raise NotImplementedError("Your exotic operating system is not supported")
+
         except SessionNotCreatedException as e:
-            print(f"Ошибка: \033[91mSessionNotCreatedException.\033[0m FireFox may not be installed. \n\n{e.msg}")
+            print(f"Error: \033[91mSessionNotCreatedException.\033[0m FireFox may not be installed. \n\n{e.msg}")
             raise SystemExit(1)
 
         try:
@@ -213,7 +244,9 @@ class Parser:
             print(f"Error: \033[91mWebDriverException.\033[0m \n\n{e.msg}")
             raise SystemExit(1)
 
+        time.sleep(delay)
         pbar = tqdm(total=limit)
+
         while True:
             html = driver.page_source
             images = self.__parse_html(html)  # Direct links extracting from the html code
@@ -235,22 +268,35 @@ class Parser:
 
                 if old_page_height == new_page_height:
                     try:
-                        driver.find_element_by_xpath(
-                            "//div [starts-with(@class, 'more')]//a[starts-with(@class, 'button2')]"
-                        ).click()
+                        driver.find_element(By.XPATH, "//div[starts-with(@class, 'FetchListButton')]//button[starts-with(@class, 'Button2')]").click()
                     except NoSuchElementException as e:
-                        print(f"Ошибка: {e.msg}")
+                        print(f"Error: {e.msg}")
                         break
                     except ElementNotInteractableException:
                         pbar.set_postfix_str("Fewer images found")
                         break
-                    except:
-                        break
+                    except Exception as e:
+                        print(e)
 
         driver.close()
         driver.quit()
 
         return images[:limit]
+
+    def __find_firefox_profile(self):
+        profile_paths = [
+            "~/snap/firefox/common/.mozilla/firefox/*.default*",
+            "~/.mozilla/firefox/*.default*",
+            "~/.var/app/org.mozilla.firefox/.mozilla/firefox/*.default*"
+        ]
+
+        for path in profile_paths:
+            full_path = os.path.expanduser(path)
+            profiles = glob.glob(full_path)
+            if profiles:
+                return profiles[0]
+
+        return "Profile not found"
 
     def __prepare_request(self, params: dict) -> PreparedRequest:
         """
@@ -296,17 +342,35 @@ class Parser:
         """
 
         soup = BeautifulSoup(html, "lxml")
-        pictures_place = soup.find("div", {"class": "serp-list"})
+        pictures_place = soup.find("div", {"class": "SerpList"})
 
-        urls = []
-        try:
-            pictures = pictures_place.find_all("div", {"class": "serp-item"})
+        if pictures_place is not None:
+            urls = []
+            try:
+                pictures = pictures_place.find_all("div", {"class": "SerpItem"})
 
-            for pic in pictures:
-                data = json.loads(pic.get("data-bem"))
-                image = data['serp-item']['img_href']
-                urls.append(image)
+                for pic in pictures:
+                    url_soup = BeautifulSoup(str(pic), 'html.parser')
+                    image_url = url_soup.find('a', class_='Link ContentImage-Cover')['href']
+                    image_url = urllib.parse.parse_qs(urllib.parse.urlparse(image_url).query)['img_url'][0]
 
-            return urls
-        except AttributeError:
-            return urls
+                    urls.append(image_url)
+
+                return urls
+            except AttributeError:
+                return urls
+
+        else:
+            pictures_place = soup.find("div", {"class": "cbir-page-layout__main-content"})
+            urls = []
+            try:
+                pictures = pictures_place.find_all("div", {"class": "serp-item"})
+
+                for pic in pictures:
+                    data = json.loads(pic.get("data-bem"))
+                    image = data['serp-item']['img_href']
+                    urls.append(image)
+
+                return urls
+            except AttributeError:
+                return urls
