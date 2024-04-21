@@ -24,7 +24,7 @@ for cat in similar_cats:
     print(cat)
 
 # Save the images:
-output_dir = "./images/cat"
+output_dir = "./images/cats"
 make_directory(output_dir)
 
 save_images(square_cat, dir_path=output_dir, prefix="original_")  # Add prefix to filenames
