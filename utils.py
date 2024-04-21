@@ -4,7 +4,7 @@ import shutil
 import requests
 
 from tqdm import tqdm
-from dataset_preparation.parsing.yandex_images_parser import Parser
+from yandex_images_parser import Parser
 
 
 def find_images(plant: str, number: int, delay: float = 6.0, **kwargs) -> list:
@@ -43,6 +43,9 @@ def remove_duplicates(urls: list) -> list:
 
 
 def save_images(urls: list, dir_path: str, prefix: str = "", number_images: bool = False):
+    if not os.path.exists(dir_path):
+        print(f"Error: Directory '{dir_path}' does not exist!")
+
     broken_url_counter = 0
     for i, url in enumerate(tqdm(urls)):
         image_name = prefix + str(url.split('/')[-1])
@@ -55,7 +58,8 @@ def save_images(urls: list, dir_path: str, prefix: str = "", number_images: bool
         try:
             r = requests.get(url=url, allow_redirects=True, timeout=3.0)
             open(path, 'wb').write(r.content)
-        except Exception:
+        except Exception as e:
+            print(e)
             broken_url_counter += 1
 
     print(f"Saved images: {len(urls) - broken_url_counter}.\tUnsuccessful: {broken_url_counter}.\n")
