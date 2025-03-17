@@ -218,18 +218,28 @@ class Parser:
                 geckodriver_path = "geckodriver/geckodriver.exe"
                 service = Service(executable_path=geckodriver_path)
                 driver = webdriver.Firefox(service=service, options=options)
+
             elif sys.platform.startswith('linux'):
                 options.add_argument(f"--profile={self.profile_path}")
 
-                try:
-                    geckodriver_path = "/usr/bin/geckodriver"
-                    service = Service(executable_path=geckodriver_path)
-                    driver = webdriver.Firefox(service=service, options=options)
+                geckodriver_paths = [
+                    "/usr/bin/geckodriver",
+                    "/usr/local/bin/geckodriver",
+                    "/snap/bin/geckodriver",
+                ]
 
-                except WebDriverException:
-                    geckodriver_path = "/usr/local/bin/geckodriver"
-                    service = Service(executable_path=geckodriver_path)
-                    driver = webdriver.Firefox(service=service, options=options)
+                driver = None
+                for geckodriver_path in geckodriver_paths:
+                    try:
+                        service = Service(executable_path=geckodriver_path)
+                        driver = webdriver.Firefox(service=service, options=options)
+                        break  # Если успешно запустили, выходим из цикла
+                    except WebDriverException:
+                        continue  # Пробуем следующий путь
+
+                if driver is None:
+                    raise WebDriverException(
+                        "Could not find a valid geckodriver path. Install geckodriver or provide the correct path.")
 
             else:
                 raise NotImplementedError("Your exotic operating system is not supported")
@@ -351,7 +361,7 @@ class Parser:
 
                 for pic in pictures:
                     url_soup = BeautifulSoup(str(pic), 'html.parser')
-                    image_url = url_soup.find('a', class_='Link ContentImage-Cover')['href']
+                    image_url = url_soup.find('a', class_='Link ImagesContentImage-Cover')['href']
                     image_url = urllib.parse.parse_qs(urllib.parse.urlparse(image_url).query)['img_url'][0]
 
                     urls.append(image_url)
